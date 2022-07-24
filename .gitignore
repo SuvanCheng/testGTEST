@@ -1,0 +1,20 @@
+# CMake
+/build/
+
+# Virtualenv
+/venv/
+
+# Eclipse
+/.cproject
+/.project
+/.pydevproject
+/.settings/
+
+# Visual Studio Code
+/.vscode/
+
+# QtCreator
+/CMakeLists.txt.user
+
+# Python
+__pycache__/

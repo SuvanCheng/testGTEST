@@ -1,0 +1,83 @@
+version: "{build}"
+
+image:
+  - Visual Studio 2019
+
+configuration:
+  - Debug
+  - Release
+
+platform:
+  - x64
+  - x86
+
+environment:
+  VCPKG_ROOT: C:\Tools\vcpkg
+  VCPKG_DEFAULT_TRIPLET: "%PLATFORM%-windows"
+  CMAKE_BUILD_PARALLEL_LEVEL: 2
+  VERBOSE: 1
+  matrix:
+    - PATH: C:\Python37-x64;C:\Python37-x64\Scripts;%PATH%
+    - PATH: C:\Python37;C:\Python37\Scripts;%PATH%
+
+matrix:
+  fast_finish: true
+  exclude:
+    - platform: x86
+      PATH: C:\Python37-x64;C:\Python37-x64\Scripts;%PATH%
+    - platform: x64
+      PATH: C:\Python37;C:\Python37\Scripts;%PATH%
+
+cache:
+  - '%VCPKG_ROOT%\installed -> vcpkgfile.txt'
+  - '%LOCALAPPDATA%\pip\Cache -> requirements*.txt'
+
+install:
+  - python -m pip install -U -r requirements-test.txt
+  - if "%PLATFORM%"=="x86" (
+      set "CMAKE_GENERATOR_PLATFORM=Win32"
+    ) else if "%PLATFORM%"=="x64" (
+      set "CMAKE_GENERATOR_PLATFORM=x64"
+    )
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" (
+      set "CMAKE_GENERATOR=Visual Studio 16 2019"
+    )
+  - if "%CONFIGURATION%"=="Debug" (
+      set "BUILD_BENCHMARKS=OFF"
+    ) else if "%CONFIGURATION%"=="Release" (
+      set "BUILD_BENCHMARKS=ON"
+    )
+  - cmake -E environment
+
+build_script:
+  - cmake --warn-uninitialized
+      -D package_manager=vcpkg
+      -D build_type=%CONFIGURATION%
+      -D build_dir=build
+      -D update=ON
+      -P scripts\setup.cmake
+  - cmake
+      -B build
+      -D BUILD_SHARED_LIBS=%BUILD_SHARED_LIBS%
+      -D CMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
+      -D BUILD_TESTING=ON
+      -D BUILD_BENCHMARKS=%BUILD_BENCHMARKS%
+      -D BUILD_EXAMPLES=ON
+      -D debug_dynamic_deps=ON
+  - cmake --build build --verbose --config %CONFIGURATION%
+
+test_script:
+  - cmake -E chdir build ctest -V -C %CONFIGURATION%
+  - cmake --install build --verbose --config %CONFIGURATION%
+
+artifacts:
+  - path: build\**\*.log
+    name: logs
+  - path: build\**\*.xml
+    name: test_results
+  - path: build\**\CMakeCache.txt
+    name: cmake_cache
+
+skip_commits:
+  files:
+    - .travis.yml

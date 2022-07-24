@@ -1,0 +1,5 @@
+ignore:
+  - "external/.*"
+  - "tests/.*"
+  - ".*_test\\.cpp"
+  - ".*_benchmark\\.cpp"

@@ -1,0 +1,8 @@
+asio
+benchmark
+catch2
+doctest
+gtest
+pybind11
+spdlog
+tbb
